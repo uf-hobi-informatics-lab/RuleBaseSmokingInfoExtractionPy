@@ -1,0 +1,47 @@
+###
+ # <p>Title:  </p>
+ # <p>Create Date: 19:44:14 01/10/22</p>
+ # <p>Copyright: College of Medicine </p>
+ # <p>Organization: University of Florida</p>
+ # @author Yonghui Wu
+ # @version 1.0
+ # <p>Description: </p>
+ ##
+
+class TemporalExpression:
+	def __init__(self):
+		# section
+		self.sec = 'ADMISSION'
+		# context in [self.start, self.end) in self.row 
+		self.text = ''
+		# starts from 1
+		self.row = 0
+		# starts from 0
+		# character index of the start and end
+		self.start = -1
+		self.end = -1
+		# word index of the start and the end
+		self.word_start = -1
+		self.word_end = -1
+		self.value = ''
+		self.type = 'DATE'
+		self.mod = 'NA'
+
+	# 0 represents using character index; 1 represents using word index
+	def tostring(self, type = 0):
+		te_str = 'TIMEX3="' 
+		te_str += self.text + '" '
+		if type == 0:
+			te_str += str(self.row) + ':' + str(self.start) + ' ' + str(self.row) + ':' + str(self.end)
+		elif type ==1:
+			te_str += str(self.row) + ':' + str(self.word_start) + ' ' + str(self.row) + ':' + str(self.word_end)
+		te_str += '||' + 'type="' + self.type + '"'
+		te_str += '||' + 'val="' + self.value + '"'
+		te_str += '||' + 'mod="' + self.mod + '"'
+		return te_str
+
+
+
+if __name__ == "__main__":
+    import sys
+ 
