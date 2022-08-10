@@ -96,7 +96,7 @@ def teFormat(te):
                 expr.type = data[-1]
                 expr.value = data[0]
         match = re.search(expr.value, expr.text) 
-        formattedExpr = f"T{ct}\t{expr.type} { expr.start + match.start() + 1}  { expr.start + match.end() + 1}\t{expr.value}"
+        formattedExpr = f"T{ct}\t{expr.type} { expr.start + match.start() }  { expr.start + match.end() }\t{expr.value}"
         ct += 1
         new_te.append(formattedExpr)
     
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     my_engine= RuleEngine()
     for file in glob.iglob(f"{sys.argv[1]}/*.txt"):
         myf = open(file)
-        text=myf.read().strip()
+        text=myf.read() #Removed .strip() 
         myf.close()
         results=my_engine.extract(text)
         print ("total %s results" % str(len(results))  )
