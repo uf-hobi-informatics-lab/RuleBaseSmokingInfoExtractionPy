@@ -37,7 +37,6 @@ def teFilter(te):
                 te_max[ str(te[i].start)[1]] = i
                 te_max[str(te[i].start)][2] = te[i].value
                 te_available[i] = 1
-            #print(te_max)
 	
     new_te = []
     for i in range(0, len(te)):
@@ -46,33 +45,9 @@ def teFilter(te):
 	
     return new_te
 
-def OGteFilter(te):
-	# Remove concepts start at the same position. Will keep longer one if the same start position
-    # ORIGINAL VERSION
-	te_max = {}
-	te_available = [0] * len(te)
-	for i in range(0, len(te)):
-		if ( str(te[i].start)) not in te_max:
-			te_max[ str(te[i].start)] = [0]*2
-			te_max[ str(te[i].start)][0] = te[i].end
-			te_max[ str(te[i].start)][1] = i
-			te_available[i] = 1
-		elif te[i].end > te_max[ str(te[i].start) ][0]:
-			te_max[ str(te[i].start)][0] = te[i].end
-			te_available[te_max[str(te[i].start)][1]] = 0
-			te_max[str(te[i].start)][1] = i
-			te_available[i] = 1
-	
-	new_te = []
-	for i in range(0, len(te)):
-		if te_available[i] == 1:
-			new_te.append(te[i])
-	
-	return new_te
 
-def teFormat(te):
+def teClean(te):
     new_te = []
-    ct = 1
     for expr in te:
         data = re.split('\s+', expr.value)
         if (len(data) < 2):
@@ -96,11 +71,45 @@ def teFormat(te):
                 expr.type = data[-1]
                 expr.value = data[0]
         match = re.search(expr.value, expr.text) 
-        formattedExpr = f"T{ct}\t{expr.type} { expr.start + match.start() }  { expr.start + match.end() }\t{expr.value}"
+        expr.start = expr.start + match.start()
+        expr.end = expr.start + len(expr.value)
+       
+    
+    te_start = {}
+    te_available = [0] * len(te)
+    for i in range(0, len(te)):
+        if (te[i].start not in te_start):
+            te_start[ te[i].start] = [0]*2
+            te_start[ te[i].start][0] = te[i].start
+            te_start[ te[i].start][1] = i
+            te_available[i] = 1
+        else:
+            if ((len(te[i].text) < len(te[te_start[te[i].start][1]].text)) & 
+                  (te[i].start == te_start[ te[i].start][0])):
+                # print(f"[NOTICE]:\tKeeping [{te[te_start[te[i].start][1]].text}] over [{te[i].text}]")
+                te_available[te_start[te[i].start][1]] = 1
+                te_available[i] = 0
+            elif ((te[i].start == te_start[ te[i].start][0])): ## Change this
+                # print(f"[NOTICE]:\tRemoving [{te[te_start[te[i].start][1]].text}] in favor of [{te[i].text}]")
+                te_available[te_start[te[i].start][1]] = 0
+                te_available[i] = 1
+
+    for i in range(0, len(te)):
+        if te_available[i] == 1:
+            new_te.append(te[i])
+	
+    return new_te
+    
+
+def teFormat(te):
+    new_te = []
+    ct = 1
+    for expr in te:
+        formattedExpr = f"T{ct}\t{expr.type} {expr.start} {expr.end}\t{expr.value}"
         ct += 1
         new_te.append(formattedExpr)
-    
     return new_te
+
 
 if __name__ == "__main__":
     import sys
@@ -108,7 +117,6 @@ if __name__ == "__main__":
     import re
 
     ''' 1. input text '''
-
     my_engine= RuleEngine()
     for file in glob.iglob(f"{sys.argv[1]}/*.txt"):
         myf = open(file)
@@ -116,8 +124,9 @@ if __name__ == "__main__":
         myf.close()
         results=my_engine.extract(text)
         print ("total %s results" % str(len(results))  )
-        
         results = teFilter(results)
+
+        results = teClean(results)
 
         print ("total %s results after filtering" % str(len(results))  )
 
@@ -128,7 +137,6 @@ if __name__ == "__main__":
         output_log = open(output_filename, "w")
 
         for item in results:
-            print (item)
             output_log.write(item + "\n")
         print(f"Output saved to '{output_filename}'.")
         output_log.close()
