@@ -101,14 +101,22 @@ def teClean(te):
     return new_te
     
 
-def teFormat(te):
+def teFormat(te, csv=False):
     new_te = []
     ct = 1
-    for expr in te:
-        formattedExpr = f"T{ct}\t{expr.type} {expr.start} {expr.end}\t{expr.value}"
-        ct += 1
-        new_te.append(formattedExpr)
-    return new_te
+    if csv == True:
+		categories, values = [], []
+        for expr in te:
+			category, value = expr.type, expr.value
+            categories.append(category)
+            values.append(value)
+        return categories, values
+    else:
+        for expr in te:
+	    formattedExpr = f"T{ct}\t{expr.type} {expr.start} {expr.end}\t{expr.value}"
+	    ct += 1
+			new_te.append(formattedExpr)
+	return new_te
 
 
 if __name__ == "__main__":
@@ -118,25 +126,55 @@ if __name__ == "__main__":
 
     ''' 1. input text '''
     my_engine= RuleEngine()
-    for file in glob.iglob(f"{sys.argv[1]}/*.txt"):
-        myf = open(file)
-        text=myf.read() #Removed .strip() 
-        myf.close()
-        results=my_engine.extract(text)
-        print ("total %s results" % str(len(results))  )
-        results = teFilter(results)
+    if not sys.argv[1].endswith('.csv'):
+        for file in glob.iglob(f"{sys.argv[1]}/*.txt"):
+            
+            myf = open(file)
+            text=myf.read().lower()#.strip()
+            myf.close()
+            
+            results=my_engine.extract(text)
+            results = teFilter(results)
 
-        results = teClean(results)
+            results = teClean(results)
 
-        print ("total %s results after filtering" % str(len(results))  )
+            print ("total %s results after filtering" % str(len(results))  )
 
-        results = teFormat(results)
+            results = teFormat(results)
 
-        print ("\n\n-----")
-        output_filename = file[:-4] + ".ann"
-        output_log = open(output_filename, "w")
+            print ("\n\n-----")
+            output_filename = file[:-4] + ".ann"
+            output_log = open(output_filename, "w")
+            try:
+                for item in results:
+                    output_log.write(item + "\n")
+                print(f"Output saved to '{output_filename}'.")
+                output_log.close()
+            except:
+                print(f'No data could be extracted from {file}. Continuing...')
+    else:
+        df = pd.read_csv(sys.argv[1], header=0, names=['pat_ID', 'note_ID', 'date', 'note_type', 'note_text'])
+        for column in ['PPD', 'PY', 'SY', 'QY', 'YQ']:
+            df[column] = pd.Series([[] for _ in range(len(df))], dtype=object)
 
-        for item in results:
-            output_log.write(item + "\n")
-        print(f"Output saved to '{output_filename}'.")
-        output_log.close()
+        for idx, row in df.iterrows():
+            text = str(row['note_text']).lower().strip()
+            try:
+                results=my_engine.extract(text)
+                print ("total %s results" % str(len(results))  )
+                results = teFilter(results)
+
+                results = teClean(results)
+
+                print ("total %s results after filtering" % str(len(results))  )
+                
+                categories, values = teFormat(results, csv=True)
+
+                for category, value in zip(categories, values):
+                    df.loc[idx, category].append(value)
+
+            except:
+                continue
+        print(f'Saving output file to {str(sys.argv[1])[:-4]}_output_file.csv')
+        df.to_csv(f'{str(sys.argv[1])[:-4]}_output_file.csv', index=False, quoting=csv.QUOTE_ALL)
+            
