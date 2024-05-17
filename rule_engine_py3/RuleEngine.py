@@ -97,42 +97,42 @@ class RuleEngine(object):
         tmpdir = rule_dir
         if not tmpdir.endswith('/'):
             tmpdir += '/'
-            for fi in os.listdir(tmpdir):
-                fi = tmpdir + fi
-                if os.path.isdir(fi):
-                    self.loadRule(fi)
-                else:
-                    cur_type = ''
-                    for line in open(fi):
-                        line = line.strip()
-                        if line == '' or line.startswith('#') or line.startswith('//'):
-                            continue
-                        if line.endswith(':'):
-                            cur_type = line[:-1].strip()
-                        else:
-                            if cur_type == '':
-                                print ('load Rules error: no type')
-                                return
-                            else:
-                                if cur_type not in self._rules:
-                                    self._rules[cur_type]=[]
-                                token = line.split('",')
-                                tlt=[None,None,None]
-                                for item in token:
-                                    (attr, val) = item.split('="')
-                                    val = val.strip('"')
-                                    if attr == 'expression':
-                                        # parse patterns in the expression
-                                        tlt[0]=re.sub(r'%(\w+)', lambda m: '(' + self._patterns[m.group(1)] + ')', val)
-                                    elif attr == 'val':
-                                        tlt[1]=val
-                                    elif attr == 'mod':
-                                        tlt[2]=val
-                                    else:
-                                        print ("----- _loadRules error, unknown type : %s",attr)
-                                        return
-                                            
-                                self._rules[cur_type].append(tlt)
+		for fi in os.listdir(tmpdir):
+			fi = tmpdir + fi
+			if os.path.isdir(fi):
+				self.loadRule(fi)
+			else:
+				cur_type = ''
+				for line in open(fi):
+					line = line.strip()
+					if line == '' or line.startswith('#') or line.startswith('//'):
+						continue
+					if line.endswith(':'):
+						cur_type = line[:-1].strip()
+					else:
+						if cur_type == '':
+							print ('load Rules error: no type')
+							return
+						else:
+							if cur_type not in self._rules:
+								self._rules[cur_type]=[]
+							token = line.split('",')
+							tlt=[None,None,None]
+							for item in token:
+								(attr, val) = item.split('="')
+								val = val.strip('"')
+								if attr == 'expression':
+									# parse patterns in the expression
+									tlt[0]=re.sub(r'%(\w+)', lambda m: '(' + self._patterns[m.group(1)] + ')', val)
+								elif attr == 'val':
+									tlt[1]=val
+								elif attr == 'mod':
+									tlt[2]=val
+								else:
+									print ("----- _loadRules error, unknown type : %s",attr)
+									return
+										
+							self._rules[cur_type].append(tlt)
 
         for key,val in self._rules.items():
             print("----- loded %s rules for %s" % (str(len(val)),key))
