@@ -170,28 +170,34 @@ if __name__ == "__main__":
             except:
                 print(f'No data could be extracted from {file}. Continuing...')
     else:
-        df = pd.read_csv(sys.argv[1], header=0, names=['pat_ID', 'note_ID', 'date', 'note_type', 'note_text'])
+        df = pd.read_csv(sys.argv[1], header=None, names=['DEID_LINKAGE_NOTE_ID', 'NOTE_TEXT'])
+
+        #Ensure the input CSV has exactly two columns
+        if df.shape[1] != 2:
+            raise ValueError("Input CSV must have exactly 2 columns: note ID, note text")
+        
         for column in ['PPD', 'PY', 'SY', 'QY', 'YQ']:
-            df[column] = pd.Series([[] for _ in range(len(df))], dtype=object)
+            df[column] = pd.NA
 
         for idx, row in df.iterrows():
-            text = str(row['note_text']).lower().strip()
-            try:
-                results=my_engine.extract(text)
-                print ("total %s results" % str(len(results))  )
-                results = teFilter(results)
+            text = str(row['NOTE_TEXT']).lower().strip()
+            
+            results=my_engine.extract(text)
+            print ("total %s results" % str(len(results))  )
 
-                results = teClean(results)
+            results = teFilter(results)
 
-                print ("total %s results after filtering" % str(len(results))  )
+            results = teClean(results)
+
+            print ("total %s results after filtering" % str(len(results)))
+
+            categories, values = teFormat(results, csv=True)
+
+            for category, value in zip(categories, values):
+                if category in df.columns and pd.isna(df.at[idx, category]):
+                    df.at[idx, category] = value
                 
-                categories, values = teFormat(results, csv=True)
 
-                for category, value in zip(categories, values):
-                    df.loc[idx, category].append(value)
-
-            except:
-                continue
         print(f'Saving output file to {str(sys.argv[1])[:-4]}_output_file.csv')
         df.to_csv(f'{str(sys.argv[1])[:-4]}_output_file.tsv', index=False, quoting=csv.QUOTE_ALL, sep='\t')
             
